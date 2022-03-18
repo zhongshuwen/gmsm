@@ -95,6 +95,21 @@ func (pub *PublicKey) Verify(msg []byte, sig []byte) bool {
 	}
 	return Sm2Verify(pub, msg, default_uid, r, s)
 }
+func (pub *PublicKey) VerifyDigest(digest []byte, sig []byte) bool {
+	var (
+		r, s  = &big.Int{}, &big.Int{}
+		inner cryptobyte.String
+	)
+	input := cryptobyte.String(sig)
+	if !input.ReadASN1(&inner, cbasn1.SEQUENCE) ||
+		!input.Empty() ||
+		!inner.ReadASN1Integer(r) ||
+		!inner.ReadASN1Integer(s) ||
+		!inner.Empty() {
+		return false
+	}
+	return Sm2VerifyDigest(pub, digest, r, s)
+}
 
 func (pub *PublicKey) Sm3Digest(msg, uid []byte) ([]byte, error) {
 	if len(uid) == 0 {
@@ -177,6 +192,43 @@ func Sm2Sign(priv *PrivateKey, msg, uid []byte, random io.Reader) (r, s *big.Int
 	}
 	return
 }
+func Sm2SigDigest(priv *PrivateKey, digest, uid []byte, random io.Reader) (r, s *big.Int, err error) {
+	e := new(big.Int).SetBytes(digest)
+	c := priv.PublicKey.Curve
+	N := c.Params().N
+	if N.Sign() == 0 {
+		return nil, nil, errZeroParam
+	}
+	var k *big.Int
+	for { // 调整算法细节以实现SM2
+		for {
+			k, err = randFieldElement(c, random)
+			if err != nil {
+				r = nil
+				return
+			}
+			r, _ = priv.Curve.ScalarBaseMult(k.Bytes())
+			r.Add(r, e)
+			r.Mod(r, N)
+			if r.Sign() != 0 {
+				if t := new(big.Int).Add(r, k); t.Cmp(N) != 0 {
+					break
+				}
+			}
+
+		}
+		rD := new(big.Int).Mul(priv.D, r)
+		s = new(big.Int).Sub(k, rD)
+		d1 := new(big.Int).Add(priv.D, one)
+		d1Inv := new(big.Int).ModInverse(d1, N)
+		s.Mul(s, d1Inv)
+		s.Mod(s, N)
+		if s.Sign() != 0 {
+			break
+		}
+	}
+	return
+}
 func Sm2Verify(pub *PublicKey, msg, uid []byte, r, s *big.Int) bool {
 	c := pub.Curve
 	N := c.Params().N
@@ -198,6 +250,32 @@ func Sm2Verify(pub *PublicKey, msg, uid []byte, r, s *big.Int) bool {
 	if err != nil {
 		return false
 	}
+	t := new(big.Int).Add(r, s)
+	t.Mod(t, N)
+	if t.Sign() == 0 {
+		return false
+	}
+	var x *big.Int
+	x1, y1 := c.ScalarBaseMult(s.Bytes())
+	x2, y2 := c.ScalarMult(pub.X, pub.Y, t.Bytes())
+	x, _ = c.Add(x1, y1, x2, y2)
+
+	x.Add(x, e)
+	x.Mod(x, N)
+	return x.Cmp(r) == 0
+}
+func Sm2VerifyDigest(pub *PublicKey, digest []byte, r, s *big.Int) bool {
+	c := pub.Curve
+	N := c.Params().N
+	one := new(big.Int).SetInt64(1)
+	if r.Cmp(one) < 0 || s.Cmp(one) < 0 {
+		return false
+	}
+	if r.Cmp(N) >= 0 || s.Cmp(N) >= 0 {
+		return false
+	}
+	var e = new(big.Int).SetBytes(digest[:32])
+
 	t := new(big.Int).Add(r, s)
 	t.Mod(t, N)
 	if t.Sign() == 0 {
