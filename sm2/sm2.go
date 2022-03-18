@@ -80,6 +80,20 @@ func (priv *PrivateKey) Sign(random io.Reader, msg []byte, signer crypto.SignerO
 	return b.Bytes()
 }
 
+// sign format = 30 + len(z) + 02 + len(r) + r + 02 + len(s) + s, z being what follows its size, ie 02+len(r)+r+02+len(s)+s
+func (priv *PrivateKey) SignDigest(random io.Reader, digest []byte, signer crypto.SignerOpts) ([]byte, error) {
+	r, s, err := Sm2SignDigest(priv, digest, random)
+	if err != nil {
+		return nil, err
+	}
+	var b cryptobyte.Builder
+	b.AddASN1(cbasn1.SEQUENCE, func(b *cryptobyte.Builder) {
+		b.AddASN1BigInt(r)
+		b.AddASN1BigInt(s)
+	})
+	return b.Bytes()
+}
+
 func (pub *PublicKey) Verify(msg []byte, sig []byte) bool {
 	var (
 		r, s  = &big.Int{}, &big.Int{}
@@ -192,7 +206,7 @@ func Sm2Sign(priv *PrivateKey, msg, uid []byte, random io.Reader) (r, s *big.Int
 	}
 	return
 }
-func Sm2SigDigest(priv *PrivateKey, digest, uid []byte, random io.Reader) (r, s *big.Int, err error) {
+func Sm2SignDigest(priv *PrivateKey, digest []byte, random io.Reader) (r, s *big.Int, err error) {
 	e := new(big.Int).SetBytes(digest)
 	c := priv.PublicKey.Curve
 	N := c.Params().N
