@@ -3,7 +3,7 @@
 GM SM2/3/4 library based on Golang
 =======
 
-[![Build Status](https://travis-ci.com/tjfoc/gmsm.svg?branch=master)](https://travis-ci.com/github/tjfoc/gmsm)
+[![Build Status](https://travis-ci.com/zhongshuwen/gmsm.svg?branch=master)](https://travis-ci.com/github/zhongshuwen/gmsm)
 
 
 ## Feature
@@ -30,7 +30,7 @@ GM SM2/3/4 library based on Golang
 ## Communication
 tjfoc国密交流 
    
-[![Join the chat at https://gitter.im/tjfoc/gmsm](https://badges.gitter.im/tjfoc/gmsm.svg)](https://gitter.im/tjfoc/gmsm?utm_source=badge&utm_medium=badge&utm_campaign=-badge&utm_content=badge)
+[![Join the chat at https://gitter.im/zhongshuwen/gmsm](https://badges.gitter.im/zhongshuwen/gmsm.svg)](https://gitter.im/zhongshuwen/gmsm?utm_source=badge&utm_medium=badge&utm_campaign=-badge&utm_content=badge)
 
 
 - 如果你对国密算法开源技术及应用感兴趣，欢迎添加“苏州同济区块链研究院·小助手“微信，回复“国密算法进群”，加入“同济区块链国密算法交流群”。微信二维码如下:  

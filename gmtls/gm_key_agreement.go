@@ -14,8 +14,8 @@ import (
 	"io"
 	"math/big"
 
-	"github.com/tjfoc/gmsm/sm2"
-	"github.com/tjfoc/gmsm/x509"
+	"github.com/zhongshuwen/gmsm/sm2"
+	"github.com/zhongshuwen/gmsm/x509"
 
 	"golang.org/x/crypto/curve25519"
 )
